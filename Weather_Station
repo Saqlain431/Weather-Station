@@ -1,0 +1,75 @@
+#include <SoftwareSerial.h>
+#include <String.h>
+
+SoftwareSerial gprsSerial(9,10);
+
+float temp =0;
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  gprsSerial.begin(9600);
+
+  gprsSerial.println(" AT+CGATT?");
+  delay(1000);
+  toSerial();
+  
+  gprsSerial.println("AT+SAPBR=3,1,\"APN\",\"Internet\"");
+  delay(2000);
+  toSerial();
+
+  gprsSerial.println("AT+SAPBR=1,1");
+  delay(2000);
+  toSerial();
+  
+  
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  temp = ((5.0 * analogRead(A0))/1024) *100.0;
+  Serial.print(" TEMPERATURE =  ");
+  Serial.print(temp);
+  Serial.print(" C");
+  Serial.println();
+  send2cloud();
+  delay(1000);
+}
+
+void send2cloud()
+{
+  gprsSerial.println("AT+HTTPINIT");
+  delay(2000);
+  toSerial();
+
+  gprsSerial.println("AT+HTTPPARA=\"URL\",\"https://api.thingspeak.com/update?api_key=UL501SO8NGPLV9C5&field1="+String(temp)+"\"");
+  delay(2000);
+  toSerial();
+
+  gprsSerial.println("AT+HTTPACTION=0");
+  delay(6000);
+  toSerial();
+
+  gprsSerial.println("AT+HTTPREAD");
+  delay(1000);
+  toSerial();
+
+  
+  gprsSerial.println();
+  gprsSerial.println("AT+HTTPTERM");
+  toSerial();
+  delay(300);
+
+  gprsSerial.println("");
+  delay(1000);
+  
+}
+
+void toSerial()
+{
+  while(gprsSerial.available()!=0)
+  {
+    Serial.write(gprsSerial.read());
+  }
+}
